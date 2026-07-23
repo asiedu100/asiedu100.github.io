@@ -2,6 +2,9 @@
   try {
     document.body.classList.add("js-ready");
 
+    const yearEl = document.querySelector("[data-year]");
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+
     const header = document.querySelector("[data-header]");
     const nav = document.querySelector("[data-nav]");
     const toggle = document.querySelector("[data-nav-toggle]");
@@ -270,16 +273,29 @@
         const email = String(fd.get("email") || "").trim();
         const message = String(fd.get("message") || "").trim();
 
-        const subject = encodeURIComponent(`Portfolio inquiry${name ? ` — ${name}` : ""}`);
-        const body = encodeURIComponent(
-          `${message || "(No message)"}\n\n---\nFrom: ${name || "(no name)"}\nEmail: ${
-            email || "(no email)"
-          }\n`,
-        );
+        const mailtoFallback = () => {
+          const subject = encodeURIComponent(`Portfolio inquiry${name ? ` — ${name}` : ""}`);
+          const body = encodeURIComponent(
+            `${message || "(No message)"}\n\n---\nFrom: ${name || "(no name)"}\nEmail: ${
+              email || "(no email)"
+            }\n`,
+          );
+          const to = "yamoahkwasi150@gmail.com";
+          window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+          if (hint) hint.textContent = "Opening your email client…";
+        };
 
-        const to = "yamoahkwasi150@gmail.com";
-        window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
-        if (hint) hint.textContent = "Opening your email client…";
+        fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(fd).toString(),
+        })
+          .then((res) => {
+            if (!res.ok) throw new Error("Form submission failed");
+            if (hint) hint.textContent = "Thanks — I'll get back to you soon.";
+            form.reset();
+          })
+          .catch(mailtoFallback);
       });
     }
 
@@ -350,7 +366,7 @@
       resetAuto();
     }
 
-
+  } catch (error) {
     document.body.classList.remove("js-ready");
     for (const item of document.querySelectorAll(".section, .site-footer")) {
       item.classList.add("is-visible");
